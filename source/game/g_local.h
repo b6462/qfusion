@@ -1316,8 +1316,8 @@ typedef struct {
 
 struct gclient_s {
 	// known to server
-	player_state_t ps;          // communicated by server to clients
 	client_shared_t r;
+	player_state_t ps;          // communicated by server to clients
 
 	// DO NOT MODIFY ANYTHING ABOVE THIS, THE SERVER
 	// EXPECTS THE FIELDS IN THAT ORDER!
@@ -1414,8 +1414,8 @@ typedef struct {
 } particles_edict_t;
 
 struct edict_s {
-	entity_state_t s;
 	entity_shared_t r;
+	entity_state_t s;
 
 	// DO NOT MODIFY ANYTHING ABOVE THIS, THE SERVER
 	// EXPECTS THE FIELDS IN THAT ORDER!

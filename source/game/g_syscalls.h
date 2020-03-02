@@ -285,6 +285,10 @@ static inline void trap_LocateEntities( struct edict_s *edicts, int edict_size, 
 	GAME_IMPORT.LocateEntities( edicts, edict_size, num_edicts, max_edicts );
 }
 
+static inline void trap_DescribeEntityState( int size, int numFields, const msg_field_t *fields ) {
+	GAME_IMPORT.DescribeEntityState( size, numFields, fields );
+}
+
 static inline struct angelwrap_api_s *trap_asGetAngelExport( void ) {
 	return GAME_IMPORT.asGetAngelExport();
 }

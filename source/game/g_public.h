@@ -20,7 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // g_public.h -- game dll information visible to server
 
-#define GAME_API_VERSION    51
+#define GAME_API_VERSION    52
 
 //===============================================================
 
@@ -61,6 +61,10 @@ typedef struct {
 	solid_t solid;
 	int clipmask;
 	edict_t *owner;
+	vec3_t origin, origin2;
+	int team;
+	int ownerNum;
+	float attenuation;
 } entity_shared_t;
 
 //===============================================================
@@ -177,6 +181,7 @@ typedef struct {
 	// The edict array is allocated in the game dll so it
 	// can vary in size from one game to another.
 	void ( *LocateEntities )( struct edict_s *edicts, int edict_size, int num_edicts, int max_edicts );
+	void ( *DescribeEntityState )( int size, int numFields, const msg_field_t *fields );
 
 	// angelscript api
 	struct angelwrap_api_s *( *asGetAngelExport )( void );

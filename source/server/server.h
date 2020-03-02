@@ -47,6 +47,10 @@ typedef struct ginfo_s {
 	int num_edicts;         // current number, <= max_edicts
 	int max_edicts;
 	int max_clients;        // <= sv_maxclients, <= max_edicts
+
+	int entityStateSize;
+	int numEntityStateFields;
+	msg_field_t *entStateFields;
 } ginfo_t;
 
 typedef struct {
@@ -58,7 +62,7 @@ typedef struct {
 	char mapname[MAX_QPATH];               // map name
 
 	char configstrings[MAX_CONFIGSTRINGS][MAX_CONFIGSTRING_CHARS];
-	entity_state_t baselines[MAX_EDICTS];
+	void *baselines; // [MAX_EDICTS]
 
 	//
 	// global variables shared between game and server
@@ -67,13 +71,17 @@ typedef struct {
 } server_t;
 
 struct gclient_s {
-	player_state_t ps;  // communicated by server to clients
 	client_shared_t r;  // shared by both the server system and game
+	player_state_t ps;  // communicated by server to clients
 };
 
+typedef struct entity_state_s {
+	int number;
+} entity_state_t;
+
 struct edict_s {
-	entity_state_t s;   // communicated by server to clients
 	entity_shared_t r;  // shared by both the server system and game
+	entity_state_t s;   // communicated by server to clients
 };
 
 #define EDICT_NUM( n ) ( (edict_t *)( (uint8_t *)sv.gi.edicts + sv.gi.edict_size * ( n ) ) )

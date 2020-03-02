@@ -29,6 +29,76 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 extern "C" {
 #endif
 
+//==================================================================
+
+typedef struct entity_state_s {
+	int number;                         // edict index
+
+	//unsigned int svflags;
+
+	int type;                           // ET_GENERIC, ET_BEAM, etc
+
+	// for client side prediction, 8*(bits 0-4) is x/y radius
+	// 8*(bits 5-9) is z down distance, 8(bits10-15) is z up
+	// GClip_LinkEntity sets this properly
+	int solid;
+
+	vec3_t origin;
+	vec3_t angles;
+	vec3_t origin2;                 // ET_BEAM, ET_PORTALSURFACE, ET_EVENT specific
+	vec3_t origin3;                 // event-specific
+
+	unsigned int modelindex;
+	unsigned int modelindex2;
+
+	int bodyOwner;                  // ET_PLAYER specific, for dead bodies
+	int channel;                    // ET_SOUNDEVENT
+
+	int frame;
+	int ownerNum;                   // ET_EVENT specific
+
+	unsigned int effects;
+
+	// impulse events -- muzzle flashes, footsteps, etc
+	// events only go out for a single frame, they
+	// are automatically cleared each frame
+	int events[2];
+	int eventParms[2];
+
+	int counterNum;                 // ET_GENERIC
+	int skinnum;                    // for ET_PLAYER
+	int itemNum;                    // for ET_ITEM
+	int firemode;                   // for weapon events
+	int damage;                     // EV_BLOOD
+	int targetNum;                  // ET_EVENT specific
+	int colorRGBA;                  // ET_BEAM, ET_EVENT specific
+	int range;                      // ET_LASERBEAM, ET_CURVELASERBEAM specific
+
+	bool linearMovement;
+	vec3_t linearMovementVelocity;
+	vec3_t linearMovementEnd;           // the end movement point for objects moving along linear path
+	vec3_t linearMovementBegin;			// the starting movement point for objects moving along linear path
+	unsigned int linearMovementDuration;
+	int64_t linearMovementTimeStamp;
+
+	// server will use this for sound culling in case
+	// the entity has an event attached to it (along with
+	// PVS culling)
+	float attenuation;
+
+	int weapon;                         // WEAP_ for players
+	bool teleported;
+
+	int sound;                          // for looping sounds, to guarantee shutoff
+
+	int light;							// constant light glow
+
+	int team;                           // team in the game
+} entity_state_t;
+
+extern const int num_ent_state_fields;
+extern const msg_field_t ent_state_fields[];
+
 typedef struct {
 #ifndef _MSC_VER
 	void ( *Printf )( const char *format, ... ) __attribute__( ( format( printf, 1, 2 ) ) );

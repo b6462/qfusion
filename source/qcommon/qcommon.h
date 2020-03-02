@@ -58,13 +58,6 @@ typedef struct {
 	bool compressed;
 } msg_t;
 
-typedef struct msg_field_s {
-	int offset;
-	int bits;
-	int count;
-	wireType_t encoding;
-} msg_field_t;
-
 // msg.c
 void MSG_Init( msg_t *buf, uint8_t *data, size_t length );
 void MSG_Clear( msg_t *buf );
@@ -76,7 +69,6 @@ int MSG_SkipData( msg_t *sb, size_t length );
 //============================================================================
 
 struct usercmd_s;
-struct entity_state_s;
 
 void MSG_WriteInt8( msg_t *sb, int c );
 void MSG_WriteUint8( msg_t *sb, int c );
@@ -92,7 +84,7 @@ void MSG_WriteString( msg_t *sb, const char *s );
 #define MSG_WriteAngle16( sb, f ) ( MSG_WriteInt16( ( sb ), ANGLE2SHORT( ( f ) ) ) )
 void MSG_WriteDeltaUsercmd( msg_t *sb, const struct usercmd_s *from, struct usercmd_s *cmd );
 void MSG_WriteEntityNumber( msg_t *msg, int number, bool remove, unsigned byteMask );
-void MSG_WriteDeltaEntity( msg_t *msg, const struct entity_state_s *from, const struct entity_state_s *to, bool force );
+void MSG_WriteDeltaEntity( msg_t *msg, const void *from, const void *to, size_t size, const msg_field_t* fields, int numFields, bool force );
 void MSG_WriteDeltaPlayerState( msg_t *msg, const player_state_t *ops, const player_state_t *ps );
 void MSG_WriteDeltaGameState( msg_t *msg, const game_state_t *from, const game_state_t *to );
 void MSG_WriteDir( msg_t *sb, vec3_t vector );
@@ -114,7 +106,7 @@ char *MSG_ReadStringLine( msg_t *sb );
 #define MSG_ReadAngle16( sb ) ( SHORT2ANGLE( MSG_ReadInt16( ( sb ) ) ) )
 void MSG_ReadDeltaUsercmd( msg_t *sb, const struct usercmd_s *from, struct usercmd_s *cmd );
 int MSG_ReadEntityNumber( msg_t *msg, bool *remove, unsigned *byteMask );
-void MSG_ReadDeltaEntity( msg_t *msg, const entity_state_t *from, entity_state_t *to, int number, unsigned byteMask );
+void MSG_ReadDeltaEntity( msg_t *msg, const void *from, void *to, size_t size, const msg_field_t* fields, int numFields, int number, unsigned byteMask );
 void MSG_ReadDeltaPlayerState( msg_t *msg, const player_state_t *ops, player_state_t *ps );
 void MSG_ReadDeltaGameState( msg_t *msg, const game_state_t *from, game_state_t *to );
 void MSG_ReadDir( msg_t *sb, vec3_t vector );
@@ -138,12 +130,12 @@ void Com_FreePureList( purelist_t **purelist );
 
 #define SNAP_MAX_DEMO_META_DATA_SIZE    4 * 1024
 
-void SNAP_ParseBaseline( msg_t *msg, entity_state_t *baselines );
+void SNAP_ParseBaseline( msg_t *msg, void *baselines );
 void SNAP_SkipFrame( msg_t *msg, struct snapshot_s *header );
-struct snapshot_s *SNAP_ParseFrame( msg_t *msg, struct snapshot_s *lastFrame, int *suppressCount, struct snapshot_s *backup, entity_state_t *baselines, int showNet );
+struct snapshot_s *SNAP_ParseFrame( msg_t *msg, struct snapshot_s *lastFrame, int *suppressCount, struct snapshot_s *backup, void *baselines, int showNet );
 
 void SNAP_WriteFrameSnapToClient( struct ginfo_s *gi, struct client_s *client, msg_t *msg, int64_t frameNum, int64_t gameTime,
-								  entity_state_t *baselines, struct client_entities_s *client_entities,
+	void*baselines, struct client_entities_s *client_entities,
 								  int numcmds, gcommand_t *commands, const char *commandsData );
 
 void SNAP_BuildClientFrameSnap( struct cmodel_state_s *cms, struct ginfo_s *gi, int64_t frameNum, int64_t timeStamp,
@@ -157,7 +149,7 @@ void SNAP_RecordDemoMessage( int demofile, msg_t *msg, int offset );
 int SNAP_ReadDemoMessage( int demofile, msg_t *msg );
 void SNAP_BeginDemoRecording( int demofile, unsigned int spawncount, unsigned int snapFrameTime,
 							  const char *sv_name, unsigned int sv_bitflags, purelist_t *purelist,
-							  char *configstrings, entity_state_t *baselines );
+							  char *configstrings, void *baselines );
 void SNAP_StopDemoRecording( int demofile );
 void SNAP_WriteDemoMetaData( const char *filename, const char *meta_data, size_t meta_data_realsize );
 size_t SNAP_ClearDemoMeta( char *meta_data, size_t meta_data_max_size );

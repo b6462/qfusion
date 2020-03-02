@@ -187,6 +187,10 @@ static inline void trap_NET_GetCurrentState( int64_t *incomingAcknowledged, int6
 	CGAME_IMPORT.NET_GetCurrentState( incomingAcknowledged, outgoingSequence, outgoingSent );
 }
 
+static inline void trap_DescribeEntityState( int size, int numFields, const msg_field_t *fields ) {
+	CGAME_IMPORT.DescribeEntityState( size, numFields, fields );
+}
+
 static inline void trap_R_UpdateScreen( void ) {
 	CGAME_IMPORT.R_UpdateScreen();
 }

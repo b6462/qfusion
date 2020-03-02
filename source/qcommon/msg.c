@@ -901,74 +901,6 @@ void MSG_ReadDeltaStruct( msg_t *msg, const void *from, void *to, size_t size, c
 // DELTA ENTITIES
 //==================================================
 
-#define ESOFS( x ) offsetof( entity_state_t,x )
-
-static const msg_field_t ent_state_fields[] = {
-	{ ESOFS( events[0] ), 32, 1, WIRE_UBASE128 },
-	{ ESOFS( eventParms[0] ), 32, 1, WIRE_BASE128 },
-
-	{ ESOFS( origin[0] ), 0, 1, WIRE_FLOAT },
-	{ ESOFS( origin[1] ), 0, 1, WIRE_FLOAT },
-	{ ESOFS( origin[2] ), 0, 1, WIRE_FLOAT },
-
-	{ ESOFS( angles[0] ), 0, 1, WIRE_ANGLE },
-	{ ESOFS( angles[1] ), 0, 1, WIRE_ANGLE },
-
-	{ ESOFS( teleported ), 1, 1, WIRE_BOOL },
-
-	{ ESOFS( type ), 32, 1, WIRE_UBASE128 },
-	{ ESOFS( solid ), 32, 1, WIRE_UBASE128 },
-	{ ESOFS( frame ), 32, 1, WIRE_UBASE128 },
-	{ ESOFS( modelindex ), 32, 1, WIRE_FIXED_INT8 },
-	{ ESOFS( svflags ), 32, 1, WIRE_UBASE128 },
-	{ ESOFS( skinnum ), 32, 1, WIRE_BASE128 },
-	{ ESOFS( effects ), 32, 1, WIRE_UBASE128 },
-	{ ESOFS( ownerNum ), 32, 1, WIRE_BASE128 },
-	{ ESOFS( targetNum ), 32, 1, WIRE_BASE128 },
-	{ ESOFS( sound ), 32, 1, WIRE_FIXED_INT8 },
-	{ ESOFS( modelindex2 ), 32, 1, WIRE_FIXED_INT8 },
-	{ ESOFS( attenuation ), 0, 1, WIRE_HALF_FLOAT },
-	{ ESOFS( counterNum ), 32, 1, WIRE_BASE128 },
-	{ ESOFS( bodyOwner ), 32, 1, WIRE_UBASE128 },
-	{ ESOFS( channel ), 32, 1, WIRE_FIXED_INT8 },
-	{ ESOFS( events[1] ), 32, 1, WIRE_UBASE128 },
-	{ ESOFS( eventParms[1] ), 32, 1, WIRE_BASE128 },
-	{ ESOFS( weapon ), 32, 1, WIRE_UBASE128 },
-	{ ESOFS( firemode ), 32, 1, WIRE_FIXED_INT8 },
-	{ ESOFS( damage ), 32, 1, WIRE_UBASE128 },
-	{ ESOFS( range ), 32, 1, WIRE_UBASE128 },
-	{ ESOFS( team ), 32, 1, WIRE_FIXED_INT8 },
-
-	{ ESOFS( origin2[0] ), 0, 1, WIRE_FLOAT },
-	{ ESOFS( origin2[1] ), 0, 1, WIRE_FLOAT },
-	{ ESOFS( origin2[2] ), 0, 1, WIRE_FLOAT },
-
-	{ ESOFS( origin3[0] ), 0, 1, WIRE_FLOAT },
-	{ ESOFS( origin3[1] ), 0, 1, WIRE_FLOAT },
-	{ ESOFS( origin3[2] ), 0, 1, WIRE_FLOAT },
-
-	{ ESOFS( linearMovementTimeStamp ), 32, 1, WIRE_UBASE128 },
-	{ ESOFS( linearMovement ), 1, 1, WIRE_BOOL },
-	{ ESOFS( linearMovementDuration ), 32, 1, WIRE_UBASE128 },
-	{ ESOFS( linearMovementVelocity[0] ), 0, 1, WIRE_FLOAT },
-	{ ESOFS( linearMovementVelocity[1] ), 0, 1, WIRE_FLOAT },
-	{ ESOFS( linearMovementVelocity[2] ), 0, 1, WIRE_FLOAT },
-	{ ESOFS( linearMovementBegin[0] ), 0, 1, WIRE_FLOAT },
-	{ ESOFS( linearMovementBegin[1] ), 0, 1, WIRE_FLOAT },
-	{ ESOFS( linearMovementBegin[2] ), 0, 1, WIRE_FLOAT },
-	{ ESOFS( linearMovementEnd[0] ), 0, 1, WIRE_FLOAT },
-	{ ESOFS( linearMovementEnd[1] ), 0, 1, WIRE_FLOAT },
-	{ ESOFS( linearMovementEnd[2] ), 0, 1, WIRE_FLOAT },
-
-	{ ESOFS( itemNum ), 32, 1, WIRE_UBASE128 },
-
-	{ ESOFS( angles[2] ), 0, 1, WIRE_ANGLE },
-
-	{ ESOFS( colorRGBA ), 32, 1, WIRE_FIXED_INT32 },
-
-	{ ESOFS( light ), 32, 1, WIRE_FIXED_INT32 },
-};
-
 /*
 * MSG_WriteEntityNumber
 */
@@ -983,12 +915,10 @@ void MSG_WriteEntityNumber( msg_t *msg, int number, bool remove, unsigned byteMa
 * Writes part of a packetentities message.
 * Can delta from either a baseline or a previous packet_entity
 */
-void MSG_WriteDeltaEntity( msg_t *msg, const entity_state_t *from, const entity_state_t *to, bool force ) {
+void MSG_WriteDeltaEntity( msg_t *msg, const void *from, const void *to, size_t size, const msg_field_t* fields, int numFields, bool force ) {
 	int number;
 	unsigned byteMask;
 	uint8_t fieldMask[32] = { 0 };
-	const msg_field_t *fields = ent_state_fields;
-	int numFields = sizeof( ent_state_fields ) / sizeof( ent_state_fields[0] );
 
 	assert( numFields < 256 );
 	if( numFields > 256 ) {
@@ -998,9 +928,9 @@ void MSG_WriteDeltaEntity( msg_t *msg, const entity_state_t *from, const entity_
 	if( !to ) {
 		if( !from )
 			Com_Error( ERR_FATAL, "MSG_WriteDeltaEntity: Unset base state" );
-		number = from->number;
+		number = *(int *)from;
 	} else {
-		number = to->number;
+		number = *(int *)to;
 	}
 
 	if( !number ) {
@@ -1055,14 +985,12 @@ int MSG_ReadEntityNumber( msg_t *msg, bool *remove, unsigned *byteMask ) {
 *
 * Can go from either a baseline or a previous packet_entity
 */
-void MSG_ReadDeltaEntity( msg_t *msg, const entity_state_t *from, entity_state_t *to, int number, unsigned byteMask ) {
+void MSG_ReadDeltaEntity( msg_t *msg, const void *from, void *to, size_t size, const msg_field_t* fields, int numFields, int number, unsigned byteMask ) {
 	uint8_t fieldMask[32] = { 0 };
-	const msg_field_t *fields = ent_state_fields;
-	int numFields = sizeof( ent_state_fields ) / sizeof( ent_state_fields[0] );
 
 	// set everything to the state we are delta'ing from
-	*to = *from;
-	to->number = number;
+	memcpy( to, from, size );
+	*(int *)to = number;
 	
 	MSG_ReadFieldMask( msg, fieldMask, sizeof( fieldMask ), byteMask );
 

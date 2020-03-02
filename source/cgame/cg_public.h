@@ -43,7 +43,7 @@ typedef void ( *cg_fdrawchar_t )( int x, int y, int w, int h, float s1, float t1
 
 // cg_public.h -- client game dll information visible to engine
 
-#define CGAME_API_VERSION   104
+#define CGAME_API_VERSION   105
 
 //
 // structs and variables shared with the main engine
@@ -65,7 +65,7 @@ typedef struct snapshot_s {
 	player_state_t playerState;
 	player_state_t playerStates[MAX_CLIENTS];
 	int numEntities;
-	entity_state_t parsedEntities[MAX_PARSE_ENTITIES];
+	void *parsedEntities[MAX_PARSE_ENTITIES];
 	game_state_t gameState;
 	int numgamecommands;
 	gcommand_t gamecommands[MAX_PARSE_GAMECOMMANDS];
@@ -146,6 +146,8 @@ typedef struct {
 	void ( *NET_GetUserCmd )( int frame, usercmd_t *cmd );
 	int ( *NET_GetCurrentUserCmdNum )( void );
 	void ( *NET_GetCurrentState )( int64_t *incomingAcknowledged, int64_t *outgoingSequence, int64_t *outgoingSent );
+
+	void ( *DescribeEntityState )( int size, int numFields, const msg_field_t *fields );
 
 	// Asynchronous HTTP requests
 	void ( *AsyncStream_UrlEncode )( const char *src, char *dst, size_t size );

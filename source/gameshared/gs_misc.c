@@ -299,3 +299,75 @@ void GS_InitModule( int module, int maxClients, gs_module_api_t *api ) {
 
 	GS_asInitializeExport();
 }
+
+//============================================================================
+
+#define ESOFS( x ) offsetof( entity_state_t,x )
+
+const msg_field_t ent_state_fields[] = {
+	{ ESOFS( events[0] ), 32, 1, WIRE_UBASE128 },
+	{ ESOFS( eventParms[0] ), 32, 1, WIRE_BASE128 },
+
+	{ ESOFS( origin[0] ), 0, 1, WIRE_FLOAT },
+	{ ESOFS( origin[1] ), 0, 1, WIRE_FLOAT },
+	{ ESOFS( origin[2] ), 0, 1, WIRE_FLOAT },
+
+	{ ESOFS( angles[0] ), 0, 1, WIRE_ANGLE },
+	{ ESOFS( angles[1] ), 0, 1, WIRE_ANGLE },
+
+	{ ESOFS( teleported ), 1, 1, WIRE_BOOL },
+
+	{ ESOFS( type ), 32, 1, WIRE_UBASE128 },
+	{ ESOFS( solid ), 32, 1, WIRE_UBASE128 },
+	{ ESOFS( frame ), 32, 1, WIRE_UBASE128 },
+	{ ESOFS( modelindex ), 32, 1, WIRE_FIXED_INT8 },
+	//{ ESOFS( svflags ), 32, 1, WIRE_UBASE128 },
+	{ ESOFS( skinnum ), 32, 1, WIRE_BASE128 },
+	{ ESOFS( effects ), 32, 1, WIRE_UBASE128 },
+	{ ESOFS( ownerNum ), 32, 1, WIRE_BASE128 },
+	{ ESOFS( targetNum ), 32, 1, WIRE_BASE128 },
+	{ ESOFS( sound ), 32, 1, WIRE_FIXED_INT8 },
+	{ ESOFS( modelindex2 ), 32, 1, WIRE_FIXED_INT8 },
+	{ ESOFS( attenuation ), 0, 1, WIRE_HALF_FLOAT },
+	{ ESOFS( counterNum ), 32, 1, WIRE_BASE128 },
+	{ ESOFS( bodyOwner ), 32, 1, WIRE_UBASE128 },
+	{ ESOFS( channel ), 32, 1, WIRE_FIXED_INT8 },
+	{ ESOFS( events[1] ), 32, 1, WIRE_UBASE128 },
+	{ ESOFS( eventParms[1] ), 32, 1, WIRE_BASE128 },
+	{ ESOFS( weapon ), 32, 1, WIRE_UBASE128 },
+	{ ESOFS( firemode ), 32, 1, WIRE_FIXED_INT8 },
+	{ ESOFS( damage ), 32, 1, WIRE_UBASE128 },
+	{ ESOFS( range ), 32, 1, WIRE_UBASE128 },
+	{ ESOFS( team ), 32, 1, WIRE_FIXED_INT8 },
+
+	{ ESOFS( origin2[0] ), 0, 1, WIRE_FLOAT },
+	{ ESOFS( origin2[1] ), 0, 1, WIRE_FLOAT },
+	{ ESOFS( origin2[2] ), 0, 1, WIRE_FLOAT },
+
+	{ ESOFS( origin3[0] ), 0, 1, WIRE_FLOAT },
+	{ ESOFS( origin3[1] ), 0, 1, WIRE_FLOAT },
+	{ ESOFS( origin3[2] ), 0, 1, WIRE_FLOAT },
+
+	{ ESOFS( linearMovementTimeStamp ), 32, 1, WIRE_UBASE128 },
+	{ ESOFS( linearMovement ), 1, 1, WIRE_BOOL },
+	{ ESOFS( linearMovementDuration ), 32, 1, WIRE_UBASE128 },
+	{ ESOFS( linearMovementVelocity[0] ), 0, 1, WIRE_FLOAT },
+	{ ESOFS( linearMovementVelocity[1] ), 0, 1, WIRE_FLOAT },
+	{ ESOFS( linearMovementVelocity[2] ), 0, 1, WIRE_FLOAT },
+	{ ESOFS( linearMovementBegin[0] ), 0, 1, WIRE_FLOAT },
+	{ ESOFS( linearMovementBegin[1] ), 0, 1, WIRE_FLOAT },
+	{ ESOFS( linearMovementBegin[2] ), 0, 1, WIRE_FLOAT },
+	{ ESOFS( linearMovementEnd[0] ), 0, 1, WIRE_FLOAT },
+	{ ESOFS( linearMovementEnd[1] ), 0, 1, WIRE_FLOAT },
+	{ ESOFS( linearMovementEnd[2] ), 0, 1, WIRE_FLOAT },
+
+	{ ESOFS( itemNum ), 32, 1, WIRE_UBASE128 },
+
+	{ ESOFS( angles[2] ), 0, 1, WIRE_ANGLE },
+
+	{ ESOFS( colorRGBA ), 32, 1, WIRE_FIXED_INT32 },
+
+	{ ESOFS( light ), 32, 1, WIRE_FIXED_INT32 },
+};
+
+const int num_ent_state_fields = sizeof( ent_state_fields ) / sizeof( ent_state_fields[0] );

@@ -1119,6 +1119,8 @@ void CG_Init( const char *serverName, unsigned int playerNum,
 			  int sharedSeed, bool gameStart ) {
 	CG_InitGameShared();
 
+	trap_DescribeEntityState( sizeof( entity_state_t ), num_ent_state_fields, ent_state_fields );
+
 	memset( &cg, 0, sizeof( cg_state_t ) );
 	memset( &cgs, 0, sizeof( cg_static_t ) );
 

@@ -1158,7 +1158,7 @@ static const gs_asMethod_t asEntityState_Methods[] =
 
 static const gs_asProperty_t asEntityState_Properties[] =
 {
-	{ ASLIB_PROPERTY_DECL( uint, svFlags ), ASLIB_FOFFSET( entity_state_t, svflags ) },
+	//{ ASLIB_PROPERTY_DECL( uint, svFlags ), ASLIB_FOFFSET( entity_state_t, svflags ) },
 	{ ASLIB_PROPERTY_DECL( int, type ), ASLIB_FOFFSET( entity_state_t, type ) },
 	{ ASLIB_PROPERTY_DECL( int, solid ), ASLIB_FOFFSET( entity_state_t, solid ) },
 	{ ASLIB_PROPERTY_DECL( int, modelindex ), ASLIB_FOFFSET( entity_state_t, modelindex ) },

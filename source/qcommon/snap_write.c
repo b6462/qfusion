@@ -34,8 +34,8 @@ Encode a client frame onto the network channel
 *
 * Writes a delta update of an entity_state_t list to the message.
 */
-static void SNAP_EmitPacketEntities( ginfo_t *gi, client_snapshot_t *from, client_snapshot_t *to, msg_t *msg, entity_state_t *baselines, entity_state_t *client_entities, int num_client_entities ) {
-	entity_state_t *oldent, *newent;
+static void SNAP_EmitPacketEntities( ginfo_t *gi, client_snapshot_t *from, client_snapshot_t *to, msg_t *msg, void *baselines, void *client_entities, int num_client_entities ) {
+	void *oldent, *newent;
 	int oldindex, newindex;
 	int oldnum, newnum;
 	int from_num_entities;
@@ -55,16 +55,16 @@ static void SNAP_EmitPacketEntities( ginfo_t *gi, client_snapshot_t *from, clien
 			newent = NULL;
 			newnum = 9999;
 		} else {
-			newent = &client_entities[( to->first_entity + newindex ) % num_client_entities];
-			newnum = newent->number;
+			newent = ((uint8_t *)client_entities + (( to->first_entity + newindex ) % num_client_entities) * gi->entityStateSize);
+			newnum = *(int *)newent;
 		}
 
 		if( oldindex >= from_num_entities ) {
 			oldent = NULL;
 			oldnum = 9999;
 		} else {
-			oldent = &client_entities[( from->first_entity + oldindex ) % num_client_entities];
-			oldnum = oldent->number;
+			oldent = ((uint8_t *)client_entities + (( to->first_entity + oldindex ) % num_client_entities) * gi->entityStateSize);
+			oldnum = *(int *)oldent;
 		}
 
 		if( newnum == oldnum ) {
@@ -73,7 +73,7 @@ static void SNAP_EmitPacketEntities( ginfo_t *gi, client_snapshot_t *from, clien
 			// in any bytes being emited if the entity has not changed at all
 			// note that players are always 'newentities', this updates their oldorigin always
 			// and prevents warping ( wsw : jal : I removed it from the players )
-			MSG_WriteDeltaEntity( msg, oldent, newent, false );
+			MSG_WriteDeltaEntity( msg, oldent, newent, gi->entityStateSize, gi->entStateFields, gi->numEntityStateFields, false );
 			oldindex++;
 			newindex++;
 			continue;
@@ -81,14 +81,14 @@ static void SNAP_EmitPacketEntities( ginfo_t *gi, client_snapshot_t *from, clien
 
 		if( newnum < oldnum ) {
 			// this is a new entity, send it from the baseline
-			MSG_WriteDeltaEntity( msg, &baselines[newnum], newent, true );
+			MSG_WriteDeltaEntity( msg, (uint8_t*)baselines + newnum * gi->entityStateSize, newent, gi->entityStateSize, gi->entStateFields, gi->numEntityStateFields, true );
 			newindex++;
 			continue;
 		}
 
 		if( newnum > oldnum ) {
 			// the old entity isn't present in the new message
-			MSG_WriteDeltaEntity( msg, oldent, NULL, false );
+			MSG_WriteDeltaEntity( msg, oldent, NULL, gi->entityStateSize, gi->entStateFields, gi->numEntityStateFields, false );
 			oldindex++;
 			continue;
 		}
@@ -529,16 +529,12 @@ static float SNAP_GainForAttenuation( float dist, float attenuation ) {
 /*
 * SNAP_SnapCullSoundEntity
 */
-static bool SNAP_SnapCullSoundEntity( cmodel_state_t *cms, edict_t *ent, const vec3_t listener_origin, 
-									float attenuation ) {
+static bool SNAP_SnapCullSoundEntity( const vec3_t listener_origin, edict_t *ent ) {
 	float gain, dist;
-
-	if( !attenuation ) {
-		return false;
-	}
+	float attenuation = ent->r.attenuation;
 
 	// extend the influence sphere cause the player could be moving
-	dist = DistanceFast( ent->s.origin, listener_origin ) - 128;
+	dist = DistanceFast( ent->r.origin, listener_origin ) - 128;
 	gain = SNAP_GainForAttenuation( dist < 0 ? 0 : dist, attenuation );
 	if( gain > 0.05 ) { // curved attenuations can keep barely audible sounds for long distances
 		return false;
@@ -552,7 +548,6 @@ static bool SNAP_SnapCullSoundEntity( cmodel_state_t *cms, edict_t *ent, const v
 */
 static bool SNAP_SnapCullEntity( cmodel_state_t *cms, edict_t *ent, edict_t *clent, client_snapshot_t *frame, 
 								const vec3_t vieworg, int viewarea, uint8_t *fatpvs ) {
-	uint8_t *areabits;
 	bool snd_cull_only;
 	bool snd_culled;
 
@@ -561,19 +556,14 @@ static bool SNAP_SnapCullEntity( cmodel_state_t *cms, edict_t *ent, edict_t *cle
 		return true;
 	}
 
-	// send all entities
-	if( frame->allentities ) {
-		return false;
-	}
-
 	// filters: transmit only to clients in the same team as this entity
 	// broadcasting is less important than team specifics
-	if( ( ent->r.svflags & SVF_ONLYTEAM ) && ( clent && ent->s.team != clent->s.team ) ) {
+	if( ( ent->r.svflags & SVF_ONLYTEAM ) && ( clent && ent->r.team != clent->r.team ) ) {
 		return true;
 	}
 
 	// send only to owner
-	if( ( ent->r.svflags & SVF_ONLYOWNER ) && ( clent && ent->s.ownerNum != clent->s.number ) ) {
+	if( ( ent->r.svflags & SVF_ONLYOWNER ) && ( clent && ent->r.ownerNum != clent->s.number ) ) {
 		return true;
 	}
 
@@ -581,16 +571,17 @@ static bool SNAP_SnapCullEntity( cmodel_state_t *cms, edict_t *ent, edict_t *cle
 		return false;
 	}
 
-	if( ( ent->r.svflags & SVF_FORCETEAM ) && ( clent && ent->s.team == clent->s.team ) ) {
+	if( ( ent->r.svflags & SVF_FORCETEAM ) && ( clent && ent->r.team == clent->r.team ) ) {
 		return false;
 	}
 
 	if( ent->r.areanum < 0 ) {
 		return true;
 	}
+
 	if( viewarea >= 0 ) {
 		// this is the same as CM_AreasConnected but portal's visibility included
-		areabits = frame->areabits + viewarea * CM_AreaRowSize( cms );
+		uint8_t *areabits = frame->areabits + viewarea * CM_AreaRowSize( cms );
 		if( !( areabits[ent->r.areanum >> 3] & ( 1 << ( ent->r.areanum & 7 ) ) ) ) {
 			// doors can legally straddle two areas, so we may need to check another one
 			if( ent->r.areanum2 < 0 || !( areabits[ent->r.areanum2 >> 3] & ( 1 << ( ent->r.areanum2 & 7 ) ) ) ) {
@@ -606,15 +597,11 @@ static bool SNAP_SnapCullEntity( cmodel_state_t *cms, edict_t *ent, edict_t *cle
 	if( ent->r.svflags & SVF_SOUNDCULL ) {
 		snd_cull_only = true;
 	}
-	// if not a sound entity but the entity is only a sound
-	else if( !ent->s.modelindex && !ent->s.events[0] && !ent->s.light && !ent->s.effects && ent->s.sound ) {
-		snd_cull_only = true;
-	}
 
 	// PVS culling alone may not be used on pure sounds, entities with
 	// events and regular entities emitting sounds
-	if( snd_cull_only || ent->s.events[0] || ent->s.sound ) {
-		snd_culled = SNAP_SnapCullSoundEntity( cms, ent, vieworg, ent->s.attenuation );
+	if( ent->r.attenuation > 0 ) {
+		snd_culled = SNAP_SnapCullSoundEntity( vieworg, ent );
 	}
 
 	// pure sound emitters don't use PVS culling at all
@@ -640,12 +627,6 @@ static void SNAP_AddEntitiesVisibleAtOrigin( cmodel_state_t *cms, ginfo_t *gi, e
 	for( entNum = 1; entNum < gi->num_edicts; entNum++ ) {
 		ent = EDICT_NUM( entNum );
 
-		// fix number if broken
-		if( ent->s.number != entNum ) {
-			Com_Printf( "FIXING ENT->S.NUMBER: %i %i!!!\n", ent->s.number, entNum );
-			ent->s.number = entNum;
-		}
-
 		if( !frame->allentities ) {
 			// always add the client entity, even if SVF_NOCLIENT
 			if( ( ent != clent ) && SNAP_SnapCullEntity( cms, ent, clent, frame, vieworg, viewarea, pvs ) ) {
@@ -660,19 +641,16 @@ static void SNAP_AddEntitiesVisibleAtOrigin( cmodel_state_t *cms, ginfo_t *gi, e
 
 		if( ent->r.svflags & SVF_FORCEOWNER ) {
 			// make sure owner number is valid too
-			if( ent->s.ownerNum > 0 && ent->s.ownerNum < gi->num_edicts ) {
-				SNAP_AddEntNumToSnapList( ent->s.ownerNum, entList );
-			} else {
-				Com_Printf( "FIXING ENT->S.OWNERNUM: %i %i!!!\n", ent->s.type, ent->s.ownerNum );
-				ent->s.ownerNum = 0;
+			if( ent->r.owner != NULL ) {
+				SNAP_AddEntNumToSnapList( ent->r.owner->s.number, entList );
 			}
 		}
 
 		if( ent->r.svflags & SVF_PORTAL ) {
 			// if it's a portal entity and not a mirror,
 			// recursively add everything from its camera positiom
-			if( !VectorCompare( ent->s.origin, ent->s.origin2 ) ) {
-				SNAP_AddEntitiesVisibleAtOrigin( cms, gi, clent, ent->s.origin2, ent->r.areanum, frame, entList );
+			if( !VectorCompare( ent->r.origin, ent->r.origin2 ) ) {
+				SNAP_AddEntitiesVisibleAtOrigin( cms, gi, clent, ent->r.origin2, ent->r.areanum, frame, entList );
 			}
 		}
 	}
@@ -698,14 +676,7 @@ static void SNAP_BuildSnapEntitiesList( cmodel_state_t *cms, ginfo_t *gi, edict_
 
 	// always add the client entity
 	if( clent ) {
-		entNum = NUM_FOR_EDICT( clent );
-		if( clent->s.number != entNum ) {
-			Com_Printf( "FIXING CLENT->S.NUMBER: %i %i!!!\n", clent->s.number, entNum );
-			clent->s.number = entNum;
-		}
-
-		// FIXME we should send all the entities who's POV we are sending if frame->multipov
-		SNAP_AddEntNumToSnapList( entNum, entList );
+		SNAP_AddEntNumToSnapList( NUM_FOR_EDICT( clent ), entList );
 	}
 
 	// if the client is outside of the world, don't send him any entity
@@ -742,7 +713,7 @@ void SNAP_BuildClientFrameSnap( cmodel_state_t *cms, ginfo_t *gi, int64_t frameN
 
 	}
 	if( clent ) {
-		VectorCopy( clent->s.origin, org );
+		VectorCopy( clent->r.origin, org );
 		org[2] += clent->r.client->ps.viewheight;
 	} else {
 		assert( client->mv );
@@ -834,7 +805,7 @@ void SNAP_BuildClientFrameSnap( cmodel_state_t *cms, ginfo_t *gi, int64_t frameN
 		state = &client_entities->entities[ne % client_entities->num_entities];
 
 		*state = ent->s;
-		state->svflags = ent->r.svflags;
+		//state->svflags = ent->r.svflags;
 
 		// don't mark *any* missiles as solid
 		if( ent->r.svflags & SVF_PROJECTILE ) {

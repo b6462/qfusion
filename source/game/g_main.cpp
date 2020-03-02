@@ -355,6 +355,8 @@ void G_Init( unsigned int seed, unsigned int framemsec, int protocol, const char
 
 	game.numentities = gs.maxclients + 1;
 
+	trap_DescribeEntityState( sizeof( entity_state_t ), num_ent_state_fields, ent_state_fields );
+
 	trap_LocateEntities( game.edicts, sizeof( game.edicts[0] ), game.numentities, game.maxentities );
 
 	// server console commands

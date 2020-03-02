@@ -544,6 +544,7 @@ void G_SnapFrame( void ) {
 
 	// finish snap
 	G_SnapClients(); // build the playerstate_t structures for all players
+
 	G_SnapEntities(); // add effects based on accumulated info along the frame
 
 	// set entity bits (prepare entities for being sent in the snap)
@@ -553,6 +554,23 @@ void G_SnapFrame( void ) {
 				G_Printf( "fixing ent->s.number (etype:%i, classname:%s)\n", ent->s.type, ent->classname ? ent->classname : "noclassname" );
 			}
 			ent->s.number = ENTNUM( ent );
+		}
+
+		// copy stuff to the shared state
+		ent->r.team = ent->s.team;
+		ent->r.ownerNum = ent->s.ownerNum;
+		VectorCopy( ent->s.origin, ent->r.origin );
+		VectorCopy( ent->s.origin2, ent->r.origin2 );
+
+		if( !ent->s.modelindex && !ent->s.events[0] && !ent->s.light && !ent->s.effects && ent->s.sound ) {
+			ent->r.svflags |= SVF_SOUNDCULL;
+		}
+
+		// PVS culling alone may not be used on entities with events or sounds
+		if( ent->s.events[0] || ent->s.sound ) {
+			ent->r.attenuation = ent->s.attenuation;
+		} else {
+			ent->r.attenuation = 0;
 		}
 
 		// temporary filter (Q2 system to ensure reliability)

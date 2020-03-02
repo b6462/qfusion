@@ -255,13 +255,13 @@ typedef enum {
 typedef enum {
 	WIRE_BOOL,					// a of value of 'true' is represented by a single bit in the header
 
-	WIRE_FIXED_INT8,				// 8-bit integer
+	WIRE_FIXED_INT8,			// 8-bit integer
 	WIRE_FIXED_INT16,			// 16-bit integer
 	WIRE_FIXED_INT32,			// 32-bit integer
 	WIRE_FIXED_INT64,			// 64-bit integer
 
 	WIRE_FLOAT,					// 32-bit floating point value
-	WIRE_HALF_FLOAT,				// 16-bit floating point value
+	WIRE_HALF_FLOAT,			// 16-bit floating point value
 
 	WIRE_ANGLE,					// 32-bit float angle value, normalized to [0..360], transmitted at half-precision
 
@@ -269,73 +269,12 @@ typedef enum {
 	WIRE_UBASE128				// base-128 encoded signed integer
 } wireType_t;
 
-//==============================================
-
-typedef struct entity_state_s {
-	int number;                         // edict index
-
-	unsigned int svflags;
-
-	int type;                           // ET_GENERIC, ET_BEAM, etc
-
-	// for client side prediction, 8*(bits 0-4) is x/y radius
-	// 8*(bits 5-9) is z down distance, 8(bits10-15) is z up
-	// GClip_LinkEntity sets this properly
-	int solid;
-
-	vec3_t origin;
-	vec3_t angles;
-	vec3_t origin2;                 // ET_BEAM, ET_PORTALSURFACE, ET_EVENT specific
-	vec3_t origin3;                 // event-specific
-
-	unsigned int modelindex;
-	unsigned int modelindex2;
-
-	int bodyOwner;                  // ET_PLAYER specific, for dead bodies
-	int channel;                    // ET_SOUNDEVENT
-
-	int frame;
-	int ownerNum;                   // ET_EVENT specific
-
-	unsigned int effects;
-
-	// impulse events -- muzzle flashes, footsteps, etc
-	// events only go out for a single frame, they
-	// are automatically cleared each frame
-	int events[2];
-	int eventParms[2];
-
-	int counterNum;                 // ET_GENERIC
-	int skinnum;                    // for ET_PLAYER
-	int itemNum;                    // for ET_ITEM
-	int firemode;                   // for weapon events
-	int damage;                     // EV_BLOOD
-	int targetNum;                  // ET_EVENT specific
-	int colorRGBA;                  // ET_BEAM, ET_EVENT specific
-	int range;                      // ET_LASERBEAM, ET_CURVELASERBEAM specific
-
-	bool linearMovement;
-	vec3_t linearMovementVelocity;
-	vec3_t linearMovementEnd;           // the end movement point for objects moving along linear path
-	vec3_t linearMovementBegin;			// the starting movement point for objects moving along linear path
-	unsigned int linearMovementDuration;
-	int64_t linearMovementTimeStamp;
-
-	float attenuation;                  // should be <= 255/16.0 as this is sent as byte
-
-	// server will use this for sound culling in case
-	// the entity has an event attached to it (along with
-	// PVS culling)
-
-	int weapon;                         // WEAP_ for players
-	bool teleported;
-
-	int sound;                          // for looping sounds, to guarantee shutoff
-
-	int light;							// constant light glow
-
-	int team;                           // team in the game
-} entity_state_t;
+typedef struct {
+	int offset;
+	int bits;
+	int count;
+	wireType_t encoding;
+} msg_field_t;
 
 //==============================================
 
